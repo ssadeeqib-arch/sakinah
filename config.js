@@ -5,11 +5,12 @@ window.SAKINAH_FIREBASE = {
   authDomain: "sakinah-280cf.firebaseapp.com",
   projectId: "sakinah-280cf",
   storageBucket: "sakinah-280cf.firebasestorage.app",
-  messagingSenderId: "450835373335"
+  messagingSenderId: "450835373335",
+  appId: "1:450835373335:web:bd0bf3777114699a73ab52"
 };
 
 /* Photo album: private Google Apps Script on Sadiq's account that saves photos to his Google Drive. */
 window.SAKINAH_PHOTOS = "https://script.google.com/macros/s/AKfycbz5Pn8bue7iKIWsJyLwvxMRPTeIQ0UimqcnJvmsiCfMNNPPr6sAud-9TkcdAEsxBfgx/exec";
 
 /* Web push key (public) from Firebase Console > Project settings > Cloud Messaging > Web Push certificates. Alerts stay hidden until this is filled. */
-window.SAKINAH_VAPID = "";
+window.SAKINAH_VAPID = "BFOoNFSv6ZIboixI__HRtbTlhFhGg0nUWlqCcrfglLuHLzPeKft123eWtKYZ7595XJfb_mOQTyeF1vnpLRx_03E";
