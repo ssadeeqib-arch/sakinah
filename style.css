@@ -276,3 +276,26 @@ button.done small{font-weight:600;color:var(--mut);margin-inline-start:4px}
 .li .ck::after{content:"";position:absolute;inset:-9px}
 .ib svg{pointer-events:none}
 #top .ib{flex:none}
+
+/* landing: the first thing you see, with our photo */
+#landing{position:fixed;inset:0;z-index:300;display:grid;place-items:center;overflow:hidden;background:var(--bg);transition:opacity .9s ease,visibility .9s;cursor:pointer}
+#landing.out{opacity:0;visibility:hidden}
+#landing.out .frame{transform:scale(1.12);transition:transform .9s ease}
+#landing .lbg{position:absolute;inset:0;background:radial-gradient(ellipse at 25% 12%,rgba(var(--rosergb),.34),transparent 58%),radial-gradient(ellipse at 85% 95%,rgba(var(--goldrgb),.16),transparent 55%),linear-gradient(180deg,var(--bg2),var(--bg))}
+#landing .lin{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;padding:20px 24px;max-width:440px;width:100%}
+#landing .frame{width:min(72vw,310px);aspect-ratio:4/5;padding:5px;border-radius:999px 999px 30px 30px;background:linear-gradient(160deg,var(--gold),var(--rose) 60%,var(--rose2));box-shadow:0 24px 70px rgba(0,0,0,.55),0 0 70px rgba(var(--rosergb),.32);animation:lpop 1.5s cubic-bezier(.2,.9,.25,1.12) both}
+#landing .frame img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 22%;border-radius:995px 995px 26px 26px;animation:lzoom 16s ease-out both}
+#landing h1{font-size:50px;margin:22px 0 0;line-height:1;animation:lup .9s .9s both}
+#landing .lnames{margin:8px 0 0;font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:13px;color:var(--gold);animation:lup .9s 1.2s both}
+#landing .ltag{margin:6px 0 0;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:22px;color:var(--mut);animation:lup .9s 1.5s both}
+#landing .lenter{margin-top:26px;min-height:48px;padding:0 28px;border-radius:99px;font-weight:800;font-size:15px;color:var(--onrose);background:linear-gradient(135deg,var(--rose),var(--rose2));box-shadow:0 8px 26px rgba(var(--rosergb),.35);animation:lup .9s 2.2s both,lpulse 2.4s 3.2s ease-in-out infinite}
+#landing .lhearts i{position:absolute;bottom:-30px;width:12px;height:12px;background:var(--rose);transform:rotate(-45deg);opacity:0;animation:lrise 11s ease-in infinite}
+#landing .lhearts i::before,#landing .lhearts i::after{content:"";position:absolute;width:12px;height:12px;background:inherit;border-radius:50%}
+#landing .lhearts i::before{top:-6px;left:0}#landing .lhearts i::after{left:6px;top:0}
+#landing .lhearts i:nth-child(1){left:12%;animation-delay:1s}#landing .lhearts i:nth-child(2){left:30%;animation-delay:4s;transform:rotate(-45deg) scale(.7)}#landing .lhearts i:nth-child(3){left:52%;animation-delay:2.5s;transform:rotate(-45deg) scale(1.2)}#landing .lhearts i:nth-child(4){left:70%;animation-delay:6s}#landing .lhearts i:nth-child(5){left:86%;animation-delay:3s;transform:rotate(-45deg) scale(.8)}#landing .lhearts i:nth-child(6){left:42%;animation-delay:7.5s;transform:rotate(-45deg) scale(.6)}
+@keyframes lpop{0%{opacity:0;transform:scale(.62) translateY(40px)}100%{opacity:1;transform:none}}
+@keyframes lzoom{from{transform:scale(1.14)}to{transform:scale(1)}}
+@keyframes lup{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes lpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes lrise{0%{opacity:0;margin-bottom:0}12%{opacity:.55}100%{opacity:0;margin-bottom:112vh}}
+@media (prefers-reduced-motion:reduce){#landing .frame,#landing .frame img,#landing .lhearts i,#landing .lenter{animation:none!important}#landing h1,#landing .lnames,#landing .ltag{animation:none}}

@@ -406,6 +406,14 @@ F.onAuthStateChanged(auth,async u=>{S.user=u;if(!u){S.screen="signin";S.r=null;r
 render();
 const cfg=window.SAKINAH_FIREBASE;
 applyTheme(true);
+/* landing page with our photo: shown first, once each time the app is opened. Add more photos to LANDING and one shows each day. */
+const LANDING=["photos/us1.jpg"];
+(function(){const L=document.getElementById("landing");if(!L)return;let seen=false;try{seen=!!sessionStorage.getItem("sakinah.landed")}catch(e){}
+if(seen||new URLSearchParams(location.search).get("tab")){L.remove();return}
+const img=document.getElementById("limg");img.onerror=()=>L.remove();img.src=LANDING[dayN()%LANDING.length];
+let done=false;const go=()=>{if(done)return;done=true;try{sessionStorage.setItem("sakinah.landed","1")}catch(e){}SFX.start();SFX.play("open");L.classList.add("out");setTimeout(()=>L.remove(),1000)};
+L.addEventListener("click",go);L.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" ")go()});setTimeout(go,14000)})();
+
 if(cfg&&cfg.apiKey)startFirebase(cfg);else startDemo();
 if("serviceWorker" in navigator&&location.protocol==="https:"&&cfg&&cfg.apiKey){navigator.serviceWorker.register("sw.js").catch(()=>{});navigator.serviceWorker.addEventListener("message",e=>{const u=e.data&&e.data.go;if(!u)return;const t=new URL(u,location.href).searchParams.get("tab");if(t&&S.screen==="app"){S.tab=t;S.sub=null;closeSheet();render()}})}
 }
