@@ -1,4 +1,4 @@
-const C="sakinah-v5";
+const C="sakinah-v6";
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(["./","index.html","style.css","content.js","app.js","config.js","fb.js","manifest.webmanifest","icon-192.png"]).catch(()=>{})))});
 self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(e.request.method!=="GET"||u.origin!==location.origin)return;
