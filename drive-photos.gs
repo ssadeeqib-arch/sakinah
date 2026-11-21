@@ -1,6 +1,7 @@
 /**
  * Sakinah photo album: saves photos into Sadiq's Google Drive.
  * Deploy: Deploy > New deployment > Web app. Execute as: Me. Who has access: Anyone.
+ * It also sends phone alerts (Firebase Cloud Messaging) when one of you sends something to the other.
  * Only the two signed-in members of the couple can use it. Each request carries
  * a Firebase sign-in token that is checked with Google before anything is saved or read.
  */
@@ -17,6 +18,7 @@ function doPost(e) {
     var who = check(q.tok, q.cid);
     if (q.a === 'up') return out(upload(q, who));
     if (q.a === 'get') return out(fetchPhoto(inAlbum(q.id)));
+    if (q.a === 'notify') return out(notify(q, who));
     if (q.a === 'del') { DriveApp.getFileById(inAlbum(q.id)).setTrashed(true); return out({ ok: true }); }
     return out({ ok: false, err: 'unknown action' });
   } catch (err) {
@@ -91,3 +93,65 @@ function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setM
 
 /* Run once from the editor to approve Drive access and create the folders. */
 function setup() { folder('us'); folder('kids'); Logger.log('Folders ready'); }
+
+
+/* ---------- Phone alerts ---------- */
+var NOTE = {
+  text: ['New message', 'sent you a message', 'chat'],
+  quick: ['New message', 'sent you a message', 'chat'],
+  whisper: ['A whisper for you', 'sent you a whisper', 'chat'],
+  card: ['A gift for you', 'sent you something to read', 'chat'],
+  pc: ['A postcard for you', 'sent you a postcard', 'chat'],
+  react: ['New reaction', 'reacted to something you sent', 'chat'],
+  photo: ['New photo', 'added a photo to the album', 'album'],
+  beat: ['A heartbeat', 'is thinking of you', 'us']
+};
+
+/* Sends a short alert to the other person's phones. Never includes the message text. */
+function notify(q, uid) {
+  var kind = NOTE[q.kind] ? q.kind : 'text';
+  var cache = CacheService.getScriptCache(), lk = 'n_' + uid + '_' + kind;
+  if (cache.get(lk)) return { ok: true, skipped: 'recent' };
+  cache.put(lk, '1', kind === 'beat' ? 300 : 6);
+  var tok = ScriptApp.getOAuthToken();
+  var H = { Authorization: 'Bearer ' + tok, 'x-goog-user-project': PROJECT };
+  var base = 'https://firestore.googleapis.com/v1/projects/' + PROJECT + '/databases/(default)/documents/';
+  var c = JSON.parse(UrlFetchApp.fetch(base + 'couples/' + q.cid, { headers: H }).getContentText());
+  var f = c.fields || {};
+  var mem = (((f.members || {}).arrayValue || {}).values || []).map(function (v) { return v.stringValue; });
+  var other = mem.filter(function (id) { return id !== uid; })[0];
+  if (!other) return { ok: true, sent: 0 };
+  var roles = ((f.roles || {}).mapValue || {}).fields || {}, names = ((f.names || {}).mapValue || {}).fields || {};
+  var myRole = (roles[uid] || {}).stringValue;
+  var who = ((names[myRole] || {}).stringValue) || 'Your partner';
+  var udoc = UrlFetchApp.fetch(base + 'users/' + other, { headers: H, muteHttpExceptions: true });
+  if (udoc.getResponseCode() !== 200) return { ok: true, sent: 0 };
+  var vals = ((((JSON.parse(udoc.getContentText()).fields || {}).fcm || {}).arrayValue || {}).values || []).map(function (v) { return v.stringValue; });
+  var keep = [], sent = 0, n = NOTE[kind];
+  vals.forEach(function (t) {
+    var r = UrlFetchApp.fetch('https://fcm.googleapis.com/v1/projects/' + PROJECT + '/messages:send', {
+      method: 'post', contentType: 'application/json', headers: H, muteHttpExceptions: true,
+      payload: JSON.stringify({ message: { token: t,
+        data: { title: n[0], body: who + ' ' + n[1], tag: kind, url: './?tab=' + n[2] },
+        webpush: { headers: { Urgency: 'high', TTL: '86400' } } } }) });
+    var code = r.getResponseCode();
+    if (code === 200) { keep.push(t); sent++; }
+    else if (code !== 404 && code !== 400) keep.push(t); /* keep the token on temporary errors */
+    else Logger.log('Removed an old phone token: ' + r.getContentText().slice(0, 120));
+  });
+  if (keep.length !== vals.length) {
+    UrlFetchApp.fetch(base + 'users/' + other + '?updateMask.fieldPaths=fcm', { method: 'patch', contentType: 'application/json', headers: H, muteHttpExceptions: true,
+      payload: JSON.stringify({ fields: { fcm: { arrayValue: { values: keep.map(function (t) { return { stringValue: t }; }) } } } }) });
+  }
+  return { ok: true, sent: sent };
+}
+
+/* Run once from the editor to approve the new permissions and test the sender. */
+function testNotify() {
+  var tok = ScriptApp.getOAuthToken();
+  var r = UrlFetchApp.fetch('https://fcm.googleapis.com/v1/projects/' + PROJECT + '/messages:send', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + tok, 'x-goog-user-project': PROJECT },
+    payload: JSON.stringify({ validate_only: true, message: { topic: 'test', data: { a: 'b' } } }) });
+  Logger.log(r.getResponseCode() + ' ' + r.getContentText().slice(0, 300));
+}
