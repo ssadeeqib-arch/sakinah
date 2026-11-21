@@ -299,3 +299,6 @@ button.done small{font-weight:600;color:var(--mut);margin-inline-start:4px}
 @keyframes lpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 @keyframes lrise{0%{opacity:0;margin-bottom:0}12%{opacity:.55}100%{opacity:0;margin-bottom:112vh}}
 @media (prefers-reduced-motion:reduce){#landing .frame,#landing .frame img,#landing .lhearts i,#landing .lenter{animation:none!important}#landing h1,#landing .lnames,#landing .ltag{animation:none}}
+#landing.nophoto .frame{display:flex;align-items:center;justify-content:center;border-radius:50%;width:min(52vw,210px);aspect-ratio:1;padding:0;background:radial-gradient(circle at 35% 30%,rgba(var(--rosergb),.35),rgba(var(--rosergb),.08))}
+#landing .lheart{display:none;width:58%;fill:var(--rose);filter:drop-shadow(0 6px 24px rgba(var(--rosergb),.6));animation:lzoom 16s ease-out both}
+#landing.nophoto .lheart{display:block}

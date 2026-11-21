@@ -73,7 +73,7 @@ unsubs.push(A.watch("",d=>{S.couple=d||S.couple;render()}));
 S.stOk=false;["h","w"].forEach(r=>unsubs.push(A.watch("state/"+r,d=>{S.st[r]=d||{};if(r===S.r&&!S.stOk){S.stOk=true;setTimeout(checkEnvelope,200)}soft()})));
 unsubs.push(A.watchColl("msgs",300,l=>{const old=S.msgs.length;S.msgs=l;soft(true);checkEnvelope();if(old&&l.length>old&&l[0].from===S.o&&S.tab!=="chat"&&l[0].k==="text"){SFX.play("recv");toast(THEM()+": "+String(l[0].x).slice(0,60))}}));
 unsubs.push(A.watchColl("games",30,l=>{S.games=l;soft()}));
-let phFirst=true;unsubs.push(A.watchColl("photos",800,l=>{const old=new Set((S.photos||[]).map(p=>p.id));S.photos=l.filter(p=>!p.gone);const fresh=S.photos.filter(p=>p.by===S.o&&!old.has(p.id));if(!phFirst&&fresh.length&&S.tab!=="album")toast(THEM()+" added "+(fresh.length>1?fresh.length+" photos":"a photo")+" to "+ALB[fresh[0].album]);phFirst=false;if(S.tab==="album")seePhotos();soft()}));
+let phFirst=true;unsubs.push(A.watchColl("photos",800,l=>{const old=new Set((S.photos||[]).map(p=>p.id));S.photos=l.filter(p=>!p.gone);const fresh=S.photos.filter(p=>p.by===S.o&&!old.has(p.id));if(!phFirst&&fresh.length&&S.tab!=="album")toast(THEM()+" added "+(fresh.length>1?fresh.length+" photos":"a photo")+" to "+ALB[fresh[0].album]);phFirst=false;syncLanding();if(S.tab==="album")seePhotos();soft()}));
 watchDay()}
 let dayUn=null,dayKey=null,lastBeats=null;
 function watchDay(){dayKey=today();if(dayUn)dayUn();dayUn=A.watch("days/"+dayKey,d=>{S.day=d||{};const b=(S.day.beats||{})[S.o]||0;if(lastBeats!=null&&b>lastBeats){heartsBurst(18);toast(THEM()+" is thinking of you")}lastBeats=b;soft()})}
@@ -238,10 +238,10 @@ else o+='<div class="card"><h3>Your space</h3><p class="sm" style="margin:6px 0 
 sheet(o)}
 
 /* ---------- album: photos saved to Sadiq's Google Drive ---------- */
-const ALB={us:"Us two",kids:"Our kids"},PHURL=()=>window.SAKINAH_PHOTOS||"";
+const ALB={us:"Us two",kids:"Our kids",welcome:"Welcome"},PHURL=()=>window.SAKINAH_PHOTOS||"";
 function seePhotos(){if(newPh())A.merge("state/"+S.r,{seenPh:Date.now()})}
 function vAlbum(){setTimeout(seePhotos,800);const al=S.album||"us",L=(S.photos||[]).filter(p=>p.album===al),ready=S.mode==="demo"||PHURL();
-let o='<div class="uhero" style="background-image:linear-gradient(180deg,rgba(var(--bgrgb),.1),rgba(var(--bgrgb),.85)),url('+photo(al==="us"?"hands2":"bokeh",900)+')"><h1>Our album</h1><p>'+(al==="us"?"Just the two of us.":"Our children, growing up.")+' Saved safely in Google Drive.</p></div>';
+let o='<div class="uhero" style="background-image:linear-gradient(180deg,rgba(var(--bgrgb),.1),rgba(var(--bgrgb),.85)),url('+photo(al==="us"?"hands2":"bokeh",900)+')"><h1>Our album</h1><p>'+(al==="us"?"Just the two of us.":al==="welcome"?"Photos for the welcome screen. One shows each day.":"Our children, growing up.")+' Saved safely in Google Drive.</p></div>';
 o+='<div class="row" style="gap:8px;margin:14px 0 12px">'+Object.entries(ALB).map(([k,n])=>'<button class="btn sm '+(al===k?"":"ghost")+'" style="flex:1" data-a="album" data-id="'+k+'">'+n+' · '+(S.photos||[]).filter(p=>p.album===k).length+'</button>').join("")+'</div>';
 if(S.up)o+='<div class="card" style="text-align:center"><b>Saving '+S.up.i+' of '+S.up.n+'…</b><div class="bar" style="margin-top:8px"><i style="width:'+Math.round((S.up.i-1)/S.up.n*100)+'%"></i></div><p class="xs mut" style="margin:6px 0 0">Keep the app open until it finishes.</p></div>';
 else if(ready)o+='<label class="btn wide" style="position:relative">'+ic("plus")+'Add photos to '+ALB[al]+'<input type="file" id="pick" accept="image/*" multiple style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>';
@@ -264,6 +264,13 @@ const stamp=new Date().toISOString().slice(0,16).replace("T","_").replace(":",""
 await A.add("photos",{album:al,fid:j.id,th,cap:cap.trim(),by:S.r,t:Date.now()});notify("photo")}ok++}catch(e){toast("Could not save a photo: "+e.message)}}
 S.up=null;if(ok){addLP(Math.min(20,ok*5));heartsBurst(16);toast(ok+" photo"+(ok>1?"s":"")+(S.mode==="demo"?" added":" saved to Google Drive"))}render()}
 const BIG={};
+/* Welcome-screen photos stay private: fetched from Drive after sign-in and kept only on this phone. */
+let landBusy=false;
+async function syncLanding(){if(landBusy||S.mode==="demo"||!PHURL())return;const W=(S.photos||[]).filter(p=>p.album==="welcome"&&p.fid).slice(-6);let c=[];try{c=JSON.parse(localStorage.getItem("sakinah.land")||"[]")}catch(e){}
+const keep=c.filter(x=>W.some(p=>p.id===x.id)),need=W.filter(p=>!keep.some(x=>x.id===p.id));if(keep.length===c.length&&!need.length)return;landBusy=true;
+try{for(const p of need){try{const j=await post({a:"get",id:p.fid});const bin=atob(j.b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);const v=await shrink(new Blob([u],{type:j.mime||"image/jpeg"}),900,.8);keep.push({id:p.id,d:v.url})}catch(e){}}
+localStorage.setItem("sakinah.land",JSON.stringify(keep))}catch(e){}landBusy=false}
+
 async function openPhoto(id){const p=(S.photos||[]).find(x=>x.id===id);if(!p)return;const d=new Date(p.t).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
 sheet('<div class="phv"><img id="phbig" src="'+(BIG[id]||p.view||p.th)+'" alt="" class="'+(BIG[id]||p.view?"":"soft")+'"></div>'+(p.cap?'<p style="font-size:17px;margin:12px 0 4px">'+esc(p.cap)+'</p>':'')+'<p class="xs mut" style="margin:8px 0 12px">Added by '+esc(nm(p.by))+' · '+d+'</p><button class="btn ghost sm" data-a="phdel" data-id="'+id+'">'+ic("trash")+'Remove from album</button>');
 if(BIG[id]||p.view||!p.fid)return;try{const j=await post({a:"get",id:p.fid});BIG[id]="data:"+j.mime+";base64,"+j.b64;const el=$("#phbig");if(el){el.src=BIG[id];el.classList.remove("soft")}}catch(e){toast("Could not load the full photo")}}
@@ -393,7 +400,7 @@ FB.token=()=>auth.currentUser?auth.currentUser.getIdToken():Promise.reject(new E
 FB.pushOk=()=>!!window.SAKINAH_VAPID&&("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window);
 FB.pushOn=async()=>{try{if(!FB.pushOk())return"unsupported";const p=await Notification.requestPermission();if(p!=="granted")return p==="denied"?"blocked":"later";const reg=await navigator.serviceWorker.ready;if(!(await F.isSupported()))return"unsupported";const t=await F.getToken(F.getMessaging(app),{vapidKey:window.SAKINAH_VAPID,serviceWorkerRegistration:reg});if(!t)return"error";await F.setDoc(F.doc(db,"users",S.user.uid),{fcm:F.arrayUnion(t)},{merge:true});localStorage.setItem("sakinah.push",t);return"on"}catch(e){return"error"}};
 FB.pushOff=async()=>{try{const t=localStorage.getItem("sakinah.push");if(t&&S.user)await F.setDoc(F.doc(db,"users",S.user.uid),{fcm:F.arrayRemove(t)},{merge:true})}catch(e){}localStorage.removeItem("sakinah.push")};
-FB.signOut=()=>{closeSheet();unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];F.signOut(auth)};
+FB.signOut=()=>{try{localStorage.removeItem("sakinah.land")}catch(e){}closeSheet();unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];F.signOut(auth)};
 const code=()=>{const a="ABCDEFGHJKMNPQRSTUVWXYZ23456789";let s="";const r=crypto.getRandomValues(new Uint8Array(8));r.forEach(x=>s+=a[x%a.length]);return s};
 let coupleUn=null;
 const enter=async(cid)=>{S.code=cid;A=fireAdapter(F,db,cid);if(coupleUn)coupleUn();let first=true;
@@ -406,11 +413,11 @@ F.onAuthStateChanged(auth,async u=>{S.user=u;if(!u){S.screen="signin";S.r=null;r
 render();
 const cfg=window.SAKINAH_FIREBASE;
 applyTheme(true);
-/* landing page with our photo: shown first, once each time the app is opened. Add more photos to LANDING and one shows each day. */
-const LANDING=["photos/us1.jpg"];
+/* landing page: shown first, once each time the app is opened. Photos come from the private Welcome album (cached on this phone); with none yet it shows the heart. */
 (function(){const L=document.getElementById("landing");if(!L)return;let seen=false;try{seen=!!sessionStorage.getItem("sakinah.landed")}catch(e){}
 if(seen||new URLSearchParams(location.search).get("tab")){L.remove();return}
-const img=document.getElementById("limg");img.onerror=()=>L.remove();img.src=LANDING[dayN()%LANDING.length];
+const img=document.getElementById("limg");let lp=[];try{lp=JSON.parse(localStorage.getItem("sakinah.land")||"[]")}catch(e){}
+if(lp.length){img.src=lp[dayN()%lp.length].d}else{L.classList.add("nophoto");img.remove()}
 let done=false;const go=()=>{if(done)return;done=true;try{sessionStorage.setItem("sakinah.landed","1")}catch(e){}SFX.start();SFX.play("open");L.classList.add("out");setTimeout(()=>L.remove(),1000)};
 L.addEventListener("click",go);L.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" ")go()});setTimeout(go,14000)})();
 

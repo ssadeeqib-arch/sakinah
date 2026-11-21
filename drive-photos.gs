@@ -8,7 +8,7 @@
 var API_KEY = 'AIzaSyDKuRfO5K0RLIasmYkWWQPXuaXIeF6AlSI';
 var PROJECT = 'sakinah-280cf';
 var ROOT = 'Sakinah Photos';
-var ALBUMS = { us: 'Us two', kids: 'Our kids' };
+var ALBUMS = { us: 'Us two', kids: 'Our kids', welcome: 'Welcome screen' };
 
 function doGet() { return out({ ok: true, app: 'Sakinah photos' }); }
 
@@ -47,7 +47,7 @@ function check(tok, cid) {
 
 /* Only photos inside the Sakinah albums can be viewed or removed through the app. */
 function inAlbum(id) {
-  var ok = [folder('us').getId(), folder('kids').getId()];
+  var ok = [folder('us').getId(), folder('kids').getId(), folder('welcome').getId()];
   var ps = DriveApp.getFileById(String(id)).getParents();
   while (ps.hasNext()) if (ok.indexOf(ps.next().getId()) >= 0) return String(id);
   throw new Error('not allowed');
@@ -92,7 +92,7 @@ function fetchPhoto(id) {
 function out(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
 /* Run once from the editor to approve Drive access and create the folders. */
-function setup() { folder('us'); folder('kids'); Logger.log('Folders ready'); }
+function setup() { folder('us'); folder('kids'); folder('welcome'); Logger.log('Folders ready'); }
 
 
 /* ---------- Phone alerts ---------- */
