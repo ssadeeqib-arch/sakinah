@@ -2,6 +2,9 @@
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const IC={
+img:'<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l4.5-4.5 3.5 3.5 3-3 5 5"/>',
+plus:'<path d="M12 5v14M5 12h14"/>',
+trash:'<path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/>',
 sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>',
 grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',
 heart:'<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',
@@ -41,9 +44,9 @@ const isW=()=>S.r==="w";
 /* ---------- adapters ---------- */
 function deep(t,s){for(const k in s){const v=s[k];if(v===DEL)delete t[k];else if(v&&typeof v==="object"&&"__inc" in v)t[k]=(Number(t[k])||0)+v.__inc;else if(v&&typeof v==="object"&&!Array.isArray(v)){if(!t[k]||typeof t[k]!=="object")t[k]={};deep(t[k],v)}else t[k]=v}return t}
 function localAdapter(role){const K="sakinah2.demo";let D=null;try{D=JSON.parse(localStorage.getItem(K)||"null")}catch(e){}
-D=D||{docs:{"":{names:{h:"Sadiq",w:"Fatima"},members:["demo-h","demo-w"],roles:{"demo-h":"h","demo-w":"w"}}},colls:{msgs:{},games:{}}};
+D=D||{docs:{"":{names:{h:"Sadiq",w:"Fatima"},members:["demo-h","demo-w"],roles:{"demo-h":"h","demo-w":"w"}}},colls:{msgs:{},games:{},photos:{}}};D.colls.photos=D.colls.photos||{};
 const W={},CW={};const save=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}};
-const isColl=p=>{const a=p.split("/");return(a[0]==="msgs"||a[0]==="games")&&a.length===2};
+const isColl=p=>{const a=p.split("/");return(a[0]==="msgs"||a[0]==="games"||a[0]==="photos")&&a.length===2};
 const getD=p=>{if(isColl(p)){const a=p.split("/");return D.colls[a[0]][a[1]]||null}return D.docs[p]||null};
 const list=c=>Object.entries(D.colls[c]).map(([id,v])=>Object.assign({id},v)).sort((a,b)=>b.t-a.t);
 const fire=p=>{const c=JSON.parse(JSON.stringify(getD(p)));(W[p]||[]).forEach(cb=>cb(c));if(isColl(p)){const k=p.split("/")[0];(CW[k]||[]).forEach(f=>f[0](list(k).slice(0,f[1])))}};
@@ -67,6 +70,7 @@ unsubs.push(A.watch("",d=>{S.couple=d||S.couple;render()}));
 S.stOk=false;["h","w"].forEach(r=>unsubs.push(A.watch("state/"+r,d=>{S.st[r]=d||{};if(r===S.r&&!S.stOk){S.stOk=true;setTimeout(checkEnvelope,200)}soft()})));
 unsubs.push(A.watchColl("msgs",300,l=>{const old=S.msgs.length;S.msgs=l;soft(true);checkEnvelope();if(old&&l.length>old&&l[0].from===S.o&&S.tab!=="chat"&&l[0].k==="text")toast(THEM()+": "+String(l[0].x).slice(0,60))}));
 unsubs.push(A.watchColl("games",30,l=>{S.games=l;soft()}));
+unsubs.push(A.watchColl("photos",800,l=>{S.photos=l.filter(p=>!p.gone);if(S.tab==="album")soft()}));
 watchDay()}
 let dayUn=null,dayKey=null,lastBeats=null;
 function watchDay(){dayKey=today();if(dayUn)dayUn();dayUn=A.watch("days/"+dayKey,d=>{S.day=d||{};const b=(S.day.beats||{})[S.o]||0;if(lastBeats!=null&&b>lastBeats){heartsBurst(18);toast(THEM()+" is thinking of you")}lastBeats=b;soft()})}
@@ -92,8 +96,8 @@ function speak(t){try{const u=new SpeechSynthesisUtterance(t);u.lang="en-GB";u.r
 let AUD=null,audId=null;
 function stopAudio(){try{speechSynthesis.cancel()}catch(e){}if(AUD){AUD.pause();AUD=null}audId=null;document.querySelectorAll(".playing").forEach(x=>x.classList.remove("playing"))}
 function playCard(id,btn){const was=audId===id;stopAudio();if(was)return;const c=CARDS.find(x=>x.id===id);if(!c)return;audId=id;document.querySelectorAll('[data-a="listen"][data-id="'+id+'"]').forEach(x=>x.classList.add("playing"));
-const fallback=()=>{if(audId!==id)return;speak(c.t+". "+(c.q?c.q[0]+" ":"")+c.b+" "+(c.f&&c.f[0]?c.f[0]+" ":"")+"Try it today: "+c.a);setTimeout(()=>{if(audId===id)markRead(id)},4000)};
-if(location.protocol==="https:"&&!location.hostname.endsWith("claude.ai")&&!location.hostname.endsWith("claudeusercontent.com")){AUD=new Audio("audio/"+id+".mp3");AUD.onended=()=>{stopAudio();markRead(id)};AUD.onerror=()=>{AUD=null;fallback()};AUD.play().catch(()=>{AUD=null;fallback()})}else fallback()}
+const fallback=()=>{if(audId!==id)return;speak(c.t+". "+(c.q?c.q[0]+" ":"")+cB(c)+" "+(c.f&&c.f[0]?c.f[0]+" ":"")+"Try it today: "+cA(c));setTimeout(()=>{if(audId===id)markRead(id)},4000)};
+if(location.protocol==="https:"&&!location.hostname.endsWith("claude.ai")&&!location.hostname.endsWith("claudeusercontent.com")){AUD=new Audio("audio/"+id+(S.r==="h"&&(c.ha||c.hb)?"h":"")+".mp3");AUD.onended=()=>{stopAudio();markRead(id)};AUD.onerror=()=>{AUD=null;fallback()};AUD.play().catch(()=>{AUD=null;fallback()})}else fallback()}
 function vib(){try{navigator.vibrate&&navigator.vibrate(15)}catch(e){}}
 const addLP=n=>A.merge("state/"+S.r,{lp:inc(n)});
 
@@ -121,10 +125,11 @@ function bloom(x,y,r,c,rot){let o='<g transform="translate('+x+' '+y+') rotate('
 function spray(cls){return'<svg class="'+(cls||"spray")+'" viewBox="0 0 160 120" aria-hidden="true"><path d="M150 8 C110 20 90 50 60 62 S14 92 6 116" fill="none" stroke="#6f9a6a" stroke-width="2.2"/><g fill="#6f9a6a"><path d="M118 26c-10-2-16 4-18 10 8 1 15-3 18-10z"/><path d="M86 52c-2-9-10-12-16-11 1 7 7 12 16 11z"/><path d="M48 76c-9-1-15 5-16 11 8 0 14-4 16-11z"/><path d="M30 92c2 8 9 11 15 10-1-6-7-11-15-10z"/></g>'+bloom(140,14,15,"#f4a6b8",10)+bloom(104,34,11,"#ffd0dc",40)+bloom(70,58,13,"#e0708e",0)+bloom(38,82,9,"#ffd0dc",20)+bloom(16,104,11,"#f4a6b8",50)+'</svg>'}
 
 /* ---------- card view ---------- */
+const cA=(c,r)=>((r||S.r)==="h"&&c.ha)||c.a,cB=(c,r)=>((r||S.r)==="h"&&c.hb)||c.b,canSend=c=>(SEND[S.r]||[]).includes(c.s);
 function cardHTML(c,i,tot,from){const st=STASHES[c.s],m=me(),saved=(m.saved||{})[c.id],tried=(m.tried||{})[c.id],read=readOf(m)[c.id];
-return'<article class="kc" data-card="'+c.id+'" style="--c:'+st.c+'"><div class="hero" style="background-image:url('+photo(cardPhoto(c),700)+')"><div class="top"><span class="sc">'+st.n+(c.from?' · '+c.from:'')+'</span>'+(from?'<span class="fromh">'+ic("heart")+'From '+esc(THEM())+'</span>':tot?'<span class="pg">'+(i+1)+' of '+tot+(read?' · read':'')+'</span>':"")+'</div><button class="play" data-a="listen" data-id="'+c.id+'" aria-label="Listen">'+ic("play")+'</button></div><h2>'+c.t+'</h2>'+(c.q?'<blockquote>“'+c.q[0]+'”<small>'+c.q[1]+'</small></blockquote>':"")+'<p class="b">'+c.b+'</p>'+(c.f&&c.f[0]?'<div class="faith">'+c.f[0]+(c.f[1]?'<small>'+c.f[1]+'</small>':"")+'</div>':c.f&&c.f[1]?'<div class="faith"><small>'+c.f[1]+'</small></div>':"")+
-'<div class="try"><b>Try it today</b><p>'+c.a+'</p>'+(tried?'<span class="done">'+ic("check")+'Done, well done!</span>':'<button class="btn sm" data-a="tried" data-id="'+c.id+'">'+ic("check")+'I did it</button>')+'</div>'+
-'<div class="acts"><button class="'+(saved?"on":"")+'" data-a="save" data-id="'+c.id+'">'+ic("book")+(saved?"Saved":"Save")+'</button><button data-a="listen" data-id="'+c.id+'">'+ic("sound")+'Listen</button><button data-a="sendcard" data-id="'+c.id+'">'+ic("send")+'Send to '+esc(THEM())+'</button></div></article>'}
+return'<article class="kc" data-card="'+c.id+'" style="--c:'+st.c+'"><div class="hero" style="background-image:url('+photo(cardPhoto(c),700)+')"><div class="top"><span class="sc">'+st.n+(c.from?' · '+c.from:'')+'</span>'+(from?'<span class="fromh">'+ic("heart")+'From '+esc(THEM())+'</span>':tot?'<span class="pg">'+(i+1)+' of '+tot+(read?' · read':'')+'</span>':"")+'</div><button class="play" data-a="listen" data-id="'+c.id+'" aria-label="Listen">'+ic("play")+'</button></div><h2>'+(S.r==="h"&&c.ht||c.t)+'</h2>'+(c.q?'<blockquote>“'+c.q[0]+'”<small>'+c.q[1]+'</small></blockquote>':"")+'<p class="b">'+cB(c)+'</p>'+(c.f&&c.f[0]?'<div class="faith">'+c.f[0]+(c.f[1]?'<small>'+c.f[1]+'</small>':"")+'</div>':c.f&&c.f[1]?'<div class="faith"><small>'+c.f[1]+'</small></div>':"")+
+'<div class="try"><b>Try it today</b><p>'+cA(c)+'</p>'+(tried?'<span class="done">'+ic("check")+'Done, well done!</span>':'<button class="btn sm" data-a="tried" data-id="'+c.id+'">'+ic("check")+'I did it</button>')+'</div>'+
+'<div class="acts"><button class="'+(saved?"on":"")+'" data-a="save" data-id="'+c.id+'">'+ic("book")+(saved?"Saved":"Save")+'</button><button data-a="listen" data-id="'+c.id+'">'+ic("sound")+'Listen</button>'+(canSend(c)?'<button data-a="sendcard" data-id="'+c.id+'">'+ic("send")+'Send to '+esc(THEM())+'</button>':'')+'</div></article>'}
 
 /* ---------- views ---------- */
 function greet(){const h=new Date().getHours();return h<12?"Good morning":h<17?"Good afternoon":"Good evening"}
@@ -135,7 +140,7 @@ o+='<div class="endcard"><div><div class="splash" style="height:auto;padding:0">
 o+=jokeCard();return o}
 function jokeCard(){const n=(dayN()+(S.jk||0))%JOKES.length;return'<div class="card joke" style="margin-top:14px">'+spray("spray sm")+'<span class="tag g">Joke of the day</span><p style="font-size:17px;line-height:1.5;margin:10px 0 12px;font-weight:700">'+JOKES[n]+'</p><div class="row" style="gap:8px"><button class="btn ghost sm" style="flex:1" data-a="joke">'+ic("spark")+'Another one</button><button class="btn sm" style="flex:1" data-a="sendjoke" data-i="'+n+'">'+ic("send")+'Send to '+esc(THEM())+'</button></div></div>'}
 function vExplore(){if(S.sub){const s=S.sub,m=me();const L=s==="saved"?CARDS.filter(c=>(m.saved||{})[c.id]):CARDS.filter(c=>c.s===s);const st=STASHES[s]||{n:"Saved ideas",c:"#f4a6b8",d:"Ideas you kept"};
-return'<div class="row" style="margin-top:4px"><button class="ib" data-a="sub" data-id="" aria-label="Back">'+ic("back")+'</button><div><h2>'+st.n+'</h2><p class="mut sm" style="margin:0">'+st.d+'</p></div></div>'+(L.length?L.map(c=>'<button class="li" style="--c:'+STASHES[c.s].c+'" data-a="open" data-id="'+c.id+'"><span class="ck '+(readOf(m)[c.id]?"on":"")+'">'+(readOf(m)[c.id]?ic("check"):"")+'</span><span><b>'+c.t+'</b><small>'+(c.q?c.q[1]:c.b.slice(0,60)+"…")+'</small></span></button>').join(""):'<p class="mut" style="margin-top:20px">Nothing saved yet. Tap Save on any idea to keep it here.</p>')}
+return'<div class="row" style="margin-top:4px"><button class="ib" data-a="sub" data-id="" aria-label="Back">'+ic("back")+'</button><div><h2>'+st.n+'</h2><p class="mut sm" style="margin:0">'+st.d+'</p></div></div>'+(L.length?L.map(c=>'<button class="li" style="--c:'+STASHES[c.s].c+'" data-a="open" data-id="'+c.id+'"><span class="ck '+(readOf(m)[c.id]?"on":"")+'">'+(readOf(m)[c.id]?ic("check"):"")+'</span><span><b>'+c.t+'</b><small>'+(c.q?c.q[1]:cB(c).slice(0,60)+"…")+'</small></span></button>').join(""):'<p class="mut" style="margin-top:20px">Nothing saved yet. Tap Save on any idea to keep it here.</p>')}
 const m=me();return'<div class="hello flor">'+spray()+'<h1>Explore</h1><p>Read anything, any time. Every idea you read makes you glow.</p></div><div class="grid">'+Object.entries(STASHES).sort((a,b)=>{const d=DECK[S.r]||[];const x=d.indexOf(a[0]),y=d.indexOf(b[0]);return(x<0?99:x)-(y<0?99:y)}).map(([k,s])=>{const L=CARDS.filter(c=>c.s===k),r=L.filter(c=>readOf(m)[c.id]).length;return'<button class="st" style="--c:'+s.c+';background-image:linear-gradient(170deg,transparent 20%,rgba(29,12,22,.92) 80%),url('+photo((STASH_PHOTOS[k]||["rose1"])[0],500)+')" data-a="sub" data-id="'+k+'"><div><h3>'+s.n+'</h3><p>'+s.d+'</p></div><span class="n">'+r+' of '+L.length+' read</span></button>'}).join("")+'<button class="st" style="--c:#f4a6b8;background-image:linear-gradient(170deg,transparent 20%,rgba(29,12,22,.92) 80%),url('+photo("paper",500)+')" data-a="sub" data-id="saved"><div><h3>Saved</h3><p>Your favourite ideas</p></div><span class="n">'+Object.keys(m.saved||{}).length+' saved</span></button></div>'}
 function daysTo(){const m=S.couple&&S.couple.meet;if(!m)return null;const d=Math.round((new Date(m+"T12:00:00")-new Date(today()+"T12:00:00"))/864e5);return d}
 function vUs(){const L=lvl(lpTotal()),d=daysTo(),beats=S.day.beats||{},qi=dayN()%QUESTIONS.length,qa=S.day.qa||{},mineA=qa[S.r],theirA=qa[S.o];
@@ -165,10 +170,10 @@ o+='<div class="card"><h3>Ways to glow</h3><div class="rings">'+deck.map(k=>{con
 const days=[];for(let i=6;i>=0;i--){const x=new Date();x.setDate(x.getDate()-i);days.push(x)}const rd=readDays(P);
 o+='<div class="card"><h3>This week</h3><div class="row" style="align-items:flex-end;gap:6px;margin-top:12px;height:90px">'+days.map(x=>{const v=rd[dk(x)]||0;return'<div style="flex:1;text-align:center"><div style="height:'+Math.max(4,Math.min(5,v)/5*70)+'px;border-radius:8px;background:'+(v?"linear-gradient(180deg,var(--gold),var(--rose))":"rgba(255,255,255,.08)")+'"></div><span class="xs mut">'+x.toLocaleDateString("en-GB",{weekday:"narrow"})+'</span></div>'}).join("")+'</div><p class="xs mut" style="margin:8px 0 0">Ideas read each day</p></div>';
 const tr=Object.entries(P.tried||{}).sort((a,b)=>b[1]>a[1]?1:-1).slice(0,6);
-o+='<div class="card"><h3>'+(mine?"What you tried":"What "+(he?"he":"she")+" tried")+'</h3>'+(tr.length?tr.map(([id])=>{const c=CARDS.find(x=>x.id===id);return c?'<button class="li" style="--c:'+STASHES[c.s].c+'" data-a="open" data-id="'+c.id+'"><span class="ck on">'+ic("check")+'</span><span><b>'+c.a+'</b><small>'+c.t+'</small></span></button>':""}).join(""):'<p class="mut sm">Nothing yet. Tap “I did it” on an idea.</p>')+'</div>';
+o+='<div class="card"><h3>'+(mine?"What you tried":"What "+(he?"he":"she")+" tried")+'</h3>'+(tr.length?tr.map(([id])=>{const c=CARDS.find(x=>x.id===id);return c?'<button class="li" style="--c:'+STASHES[c.s].c+'" data-a="open" data-id="'+c.id+'"><span class="ck on">'+ic("check")+'</span><span><b>'+cA(c,who)+'</b><small>'+c.t+'</small></span></button>':""}).join(""):'<p class="mut sm">Nothing yet. Tap “I did it” on an idea.</p>')+'</div>';
 const sv=Object.keys(P.saved||{}).map(id=>CARDS.find(c=>c.id===id)).filter(Boolean).slice(0,8);
 o+='<div class="card"><h3>'+(mine?"Your saved ideas":"Ideas "+(he?"he":"she")+" saved")+'</h3>'+(sv.length?sv.map(c=>'<button class="li" data-a="open" data-id="'+c.id+'"><span class="ck">'+ic("book")+'</span><span><b>'+c.t+'</b><small>'+STASHES[c.s].n+'</small></span></button>').join(""):'<p class="mut sm">No saved ideas yet.</p>')+'</div>';
-if(!mine)o+='<div class="card hot"><h3>Send '+(he?"him":"her")+' an idea</h3><p class="sm" style="margin:6px 0 12px">Open any idea in Explore and tap “Send to '+name+'”. It appears first in '+(he?"his":"her")+' Today, with your name on it.'+(he?' Try the <b>Her Heart</b> ideas: they are written for husbands.':' Try the <b>His Heart</b> ideas.')+'</p><button class="btn" data-a="tab" data-id="explore">'+ic("grid")+'Open Explore</button></div>';
+if(!mine)o+='<div class="card hot"><h3>Send '+(he?"him":"her")+' an idea</h3><p class="sm" style="margin:6px 0 12px">Open any idea in Explore and tap “Send to '+name+'”. It appears first in '+(he?"his":"her")+' Today, with your name on it.'+(he?' You can send him Love, World, Her Heart, Sharp Mind, Enterprise and Smile ideas.':' You can send her Confidence, Sharp Mind, Enterprise and Smile ideas: the ones that help her grow.')+'</p><button class="btn" data-a="tab" data-id="explore">'+ic("grid")+'Open Explore</button></div>';
 return o}
 function vChat(){let o='<div class="chatwrap"><div class="msgs" id="msgs">';const l=S.msgs.slice().reverse();
 if(!l.length)o+='<div class="day" style="margin:auto;text-align:center;max-width:280px">Your private space with '+esc(THEM())+'. Say something sweet.</div>';
@@ -182,14 +187,14 @@ o+='</div><div class="quick">'+qk.map(q=>'<button data-a="quick">'+q+'</button>'
 /* ---------- shell ---------- */
 function header(){if(!S.r)return'<div class="brand">'+ic("heart")+'Sakinah</div>';const L=lvl(lpTotal()),d=daysTo();
 return'<div class="brand">'+spray("bico")+'Sakinah</div>'+(d!=null&&d>=0?'<span class="chip g">'+ic("cal")+(d===0?"Today":d+"d")+'</span>':"")+'<span class="chip r">'+ic("flame")+streak(S.st.w||{})+'</span><button class="ib" data-a="settings" aria-label="Settings">'+ic("gear")+'</button>'}
-function tabs(){const u=unread();const t=[["today","Today","sun"],["explore","Explore","grid"],["us","Us","heart"],["chat","Chat","chat"],["glow","Glow","spark"]];return t.map(x=>'<button class="'+(S.tab===x[0]?"on":"")+'" data-a="tab" data-id="'+x[0]+'">'+ic(x[2])+x[1]+(x[0]==="chat"&&u?'<span class="dot">'+u+'</span>':"")+'</button>').join("")}
+function tabs(){const u=unread();const t=[["today","Today","sun"],["explore","Explore","grid"],["us","Us","heart"],["album","Album","img"],["chat","Chat","chat"],["glow","Glow","spark"]];return t.map(x=>'<button class="'+(S.tab===x[0]?"on":"")+'" data-a="tab" data-id="'+x[0]+'">'+ic(x[2])+x[1]+(x[0]==="chat"&&u?'<span class="dot">'+u+'</span>':"")+'</button>').join("")}
 function render(){const v=$("#view");$("#top").innerHTML=header();
 $("#banner").innerHTML=S.mode==="demo"&&S.r?'<div class="banner">Preview mode: data stays on this phone. Switch between '+esc(nm("w"))+' and '+esc(nm("h"))+' in Settings.</div>':"";
 if(S.screen!=="app"){$("#tabs").style.display="none";v.className="";v.innerHTML=screenHTML();return}
 $("#tabs").style.display="";$("#tabs").innerHTML=tabs();
 const ae=document.activeElement,fid=ae&&ae.id,fval=fid&&("value" in ae)?ae.value:null,deck=$("#deck"),dx=deck?deck.scrollLeft:0,st=v.scrollTop,same=render.last===S.tab+S.r+S.sub;
 const flush=S.tab==="chat"||S.tab==="today";v.className=flush?"flush":"";
-v.innerHTML=S.tab==="today"?vToday():S.tab==="explore"?vExplore():S.tab==="us"?vUs():S.tab==="chat"?vChat():vGlow();
+v.innerHTML=S.tab==="today"?vToday():S.tab==="explore"?vExplore():S.tab==="us"?vUs():S.tab==="album"?vAlbum():S.tab==="chat"?vChat():vGlow();
 if(fid){const el=document.getElementById(fid);if(el&&el.type!=="date"){if(fval!=null)el.value=fval;try{el.focus({preventScroll:true})}catch(e){}}}
 if(same){v.scrollTop=st;const d2=$("#deck");if(d2)d2.scrollLeft=dx}else v.scrollTop=0;
 render.last=S.tab+S.r+S.sub;after()}
@@ -226,6 +231,39 @@ if(S.mode==="demo")o+='<div class="card"><h3>Preview as</h3><div class="row" sty
 else o+='<div class="card"><h3>Your space</h3><p class="sm" style="margin:6px 0 0">Code: <b style="color:var(--gold);letter-spacing:2px">'+esc(S.code||"")+'</b>'+(S.couple&&S.couple.members&&S.couple.members.length<2?' · waiting for your partner to join':' · connected')+'</p><button class="btn ghost sm" style="margin-top:12px" data-a="signout">'+ic("out")+'Sign out</button></div>';
 sheet(o)}
 
+/* ---------- album: photos saved to Sadiq's Google Drive ---------- */
+const ALB={us:"Us two",kids:"Our kids"},PHURL=()=>window.SAKINAH_PHOTOS||"";
+function vAlbum(){const al=S.album||"us",L=(S.photos||[]).filter(p=>p.album===al),ready=S.mode==="demo"||PHURL();
+let o='<div class="uhero" style="background-image:linear-gradient(180deg,rgba(29,12,22,.1),rgba(29,12,22,.85)),url('+photo(al==="us"?"hands2":"bokeh",900)+')"><h1>Our album</h1><p>'+(al==="us"?"Just the two of us.":"Our children, growing up.")+' Saved safely in Google Drive.</p></div>';
+o+='<div class="row" style="gap:8px;margin:14px 0 12px">'+Object.entries(ALB).map(([k,n])=>'<button class="btn sm '+(al===k?"":"ghost")+'" style="flex:1" data-a="album" data-id="'+k+'">'+n+' · '+(S.photos||[]).filter(p=>p.album===k).length+'</button>').join("")+'</div>';
+if(S.up)o+='<div class="card" style="text-align:center"><b>Saving '+S.up.i+' of '+S.up.n+'…</b><div class="bar" style="margin-top:8px"><i style="width:'+Math.round((S.up.i-1)/S.up.n*100)+'%"></i></div><p class="xs mut" style="margin:6px 0 0">Keep the app open until it finishes.</p></div>';
+else if(ready)o+='<label class="btn wide" style="position:relative">'+ic("plus")+'Add photos to '+ALB[al]+'<input type="file" id="pick" accept="image/*" multiple style="position:absolute;inset:0;opacity:0;cursor:pointer"></label>';
+else o+='<div class="card"><p class="sm" style="margin:0">The album is being connected to Google Drive. It will open here very soon.</p></div>';
+if(!L.length)return o+'<p class="mut" style="text-align:center;margin-top:28px">No photos yet. Add your first memory.</p>';
+let last="";o+='<div class="pgrid">';
+L.forEach(p=>{const m=new Date(p.t).toLocaleDateString("en-GB",{month:"long",year:"numeric"});if(m!==last){last=m;o+='<h4>'+m+'</h4>'}o+='<button data-a="ph" data-id="'+p.id+'" aria-label="Open photo"><img src="'+p.th+'" alt="" loading="lazy"></button>'});
+return o+'</div>'}
+function shrink(file,max,q){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.naturalWidth,im.naturalHeight)),w=Math.round(im.naturalWidth*k),h=Math.round(im.naturalHeight*k),c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(im,0,0,w,h);URL.revokeObjectURL(u);res({url:c.toDataURL("image/jpeg",q),w:im.naturalWidth,h:im.naturalHeight})};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error("This photo type can’t be read. Try a JPG."))};im.src=u})}
+const b64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]);r.onerror=rej;r.readAsDataURL(f)});
+async function pickPhotos(files){files=Array.from(files||[]).filter(f=>/^image\//.test(f.type)||/\.(heic|heif)$/i.test(f.name)).slice(0,20);if(!files.length)return;
+S.pending=[];for(const f of files){try{const t=await shrink(f,260,.68);S.pending.push({f,th:t.url})}catch(e){toast(e.message)}}if(!S.pending.length)return;
+sheet('<h2 style="margin:0 0 4px">Add to '+ALB[S.album||"us"]+'</h2><p class="mut sm" style="margin:0 0 12px">'+S.pending.length+' photo'+(S.pending.length>1?"s":"")+'. They will be saved in '+esc(nm("h"))+'’s Google Drive.</p><div class="pgrid" style="margin-bottom:12px">'+S.pending.map(p=>'<span><img src="'+p.th+'" alt=""></span>').join("")+'</div><textarea id="pcap" maxlength="300" placeholder="Add a few words (optional)"></textarea><button class="btn wide" style="margin-top:12px" data-a="upphotos">'+ic("heart")+'Save to our album</button>')}
+async function post(q){const r=await fetch(PHURL(),{method:"POST",body:JSON.stringify(Object.assign({tok:await FB.token(),cid:S.code},q))});const j=await r.json();if(!j.ok)throw new Error(j.err||"failed");return j}
+async function uploadAll(){const al=S.album||"us",cap=($("#pcap")||{}).value||"",L=S.pending||[];S.pending=null;closeSheet();let ok=0;
+for(let i=0;i<L.length;i++){S.up={i:i+1,n:L.length};render();const {f,th}=L[i];
+try{if(S.mode==="demo"){const v=await shrink(f,1000,.8);await A.add("photos",{album:al,th,view:v.url,cap:cap.trim(),by:S.r,t:Date.now()})}
+else{let data,mime=f.type||"image/jpeg",name=f.name||"photo.jpg";if(f.size>20e6||!/^image\/(jpeg|png|webp|heic|heif)$/.test(mime)){const v=await shrink(f,3200,.9);data=v.url.split(",")[1];mime="image/jpeg";name=name.replace(/\.\w+$/,"")+".jpg"}else data=await b64(f);
+const stamp=new Date().toISOString().slice(0,16).replace("T","_").replace(":","");const j=await post({a:"up",album:al,name:stamp+"_"+ME()+"_"+name,mime,data,cap:cap.trim(),by:ME()});
+await A.add("photos",{album:al,fid:j.id,th,cap:cap.trim(),by:S.r,t:Date.now()})}ok++}catch(e){toast("Could not save a photo: "+e.message)}}
+S.up=null;if(ok){addLP(Math.min(20,ok*5));heartsBurst(16);toast(ok+" photo"+(ok>1?"s":"")+(S.mode==="demo"?" added":" saved to Google Drive"))}render()}
+const BIG={};
+async function openPhoto(id){const p=(S.photos||[]).find(x=>x.id===id);if(!p)return;const d=new Date(p.t).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"});
+sheet('<div class="phv"><img id="phbig" src="'+(BIG[id]||p.view||p.th)+'" alt="" class="'+(BIG[id]||p.view?"":"soft")+'"></div>'+(p.cap?'<p style="font-size:17px;margin:12px 0 4px">'+esc(p.cap)+'</p>':'')+'<p class="xs mut" style="margin:8px 0 12px">Added by '+esc(nm(p.by))+' · '+d+'</p><button class="btn ghost sm" data-a="phdel" data-id="'+id+'">'+ic("trash")+'Remove from album</button>');
+if(BIG[id]||p.view||!p.fid)return;try{const j=await post({a:"get",id:p.fid});BIG[id]="data:"+j.mime+";base64,"+j.b64;const el=$("#phbig");if(el){el.src=BIG[id];el.classList.remove("soft")}}catch(e){toast("Could not load the full photo")}}
+async function delPhoto(b){const id=b.dataset.id,p=(S.photos||[]).find(x=>x.id===id);if(!p)return;if(!b.dataset.sure){b.dataset.sure=1;b.innerHTML=ic("trash")+"Tap again to remove";return}
+try{if(p.fid&&S.mode!=="demo")await post({a:"del",id:p.fid});await A.merge("photos/"+id,{gone:true});closeSheet();toast("Removed. It stays in Google Drive’s bin for 30 days.")}catch(e){toast("Could not remove: "+e.message)}}
+document.addEventListener("change",e=>{if(e.target&&e.target.id==="pick"){pickPhotos(e.target.files);e.target.value=""}});
+
 /* ---------- actions ---------- */
 function send(x,k,extra){x=String(x||"").trim();if(!x)return;A.add("msgs",Object.assign({from:S.r,k:k||"text",x:x.slice(0,2000),t:Date.now()},extra||{}));A.merge("state/"+S.r,{lastRead:Date.now()})}
 const ACT={
@@ -260,6 +298,10 @@ google:()=>FB.signIn(),signout:()=>FB.signOut(),
 create:b=>FB.create(b.dataset.id),join:()=>FB.join($("#jcode").value),
 copycode:()=>{try{navigator.clipboard.writeText(S.code);toast("Code copied")}catch(e){toast("Code: "+S.code)}},
 enter:()=>{S.screen="app";render()},
+album:b=>{S.album=b.dataset.id;render()},
+ph:b=>openPhoto(b.dataset.id),
+upphotos:()=>uploadAll(),
+phdel:b=>delPhoto(b),
 gw:b=>{S.gw=b.dataset.id;render()},
 joke:()=>{S.jk=(S.jk||0)+1;render()},
 sendjoke:b=>{send("😄 "+JOKES[Number(b.dataset.i)]);addLP(2);burstAt(b,8);toast("Joke sent to "+THEM())}};
@@ -272,6 +314,7 @@ function startDemo(){S.mode="demo";A=localAdapter();let r="w";try{r=localStorage
 async function startFirebase(cfg){S.mode="fb";let F;try{F=await import("./fb.js")}catch(e){S.err="Could not load. Check your internet and refresh.";S.screen="signin";render();return}
 const app=F.initializeApp(cfg),auth=F.getAuth(app);let db;try{db=F.initializeFirestore(app,{localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){db=F.getFirestore(app)}
 FB.signIn=async()=>{S.err="";const p=new F.GoogleAuthProvider();try{await F.signInWithPopup(auth,p)}catch(e){if(e&&/popup|operation-not-supported|cancelled-popup/.test(e.code||"")){try{await F.signInWithRedirect(auth,p)}catch(e2){S.err="Sign-in failed. Please try again.";render()}}else if(e&&e.code!=="auth/popup-closed-by-user"){S.err="Sign-in failed: "+(e.code||"unknown");render()}}};
+FB.token=()=>auth.currentUser?auth.currentUser.getIdToken():Promise.reject(new Error("signed out"));
 FB.signOut=()=>{closeSheet();unsubs.forEach(u=>{try{u()}catch(e){}});unsubs=[];F.signOut(auth)};
 const code=()=>{const a="ABCDEFGHJKMNPQRSTUVWXYZ23456789";let s="";const r=crypto.getRandomValues(new Uint8Array(8));r.forEach(x=>s+=a[x%a.length]);return s};
 let coupleUn=null;
