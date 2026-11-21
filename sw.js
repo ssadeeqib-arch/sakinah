@@ -1,8 +1,8 @@
-const C="sakinah-v10";
+const C="sakinah-v11";
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(["./","index.html","style.css","content.js","stories.js","app.js","config.js","fb.js","manifest.webmanifest","icon-192.png"]).catch(()=>{})))});
 self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(e.request.method!=="GET"||u.origin!==location.origin)return;
-e.respondWith(fetch(e.request).then(r=>{const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match("index.html"))))});
+e.respondWith(fetch(e.request,{cache:"no-cache"}).then(r=>{const cp=r.clone();caches.open(C).then(c=>c.put(e.request,cp));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match("index.html"))))});
 /* Phone alerts: a small push from the sender arrives here and is shown as a notification. */
 self.addEventListener("push",e=>{let p={};try{p=e.data?e.data.json():{}}catch(x){try{p={data:{body:e.data.text()}}}catch(y){}}
 const d=Object.assign({},p.notification||{},p.data||{});
