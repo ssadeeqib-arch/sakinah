@@ -269,3 +269,10 @@ body,#tabs,.card,.kc,#glow{transition:background-color .8s ease,color .8s ease}
 .card.whisper .wq{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:23px;line-height:1.3;margin:10px 0 6px;color:var(--rose)}
 .card.storyus{display:block;width:100%;text-align:start;background-size:cover;background-position:center;border:1px solid color-mix(in srgb,var(--c) 40%,var(--line))}
 .card.storyus h3{font-size:24px;margin:8px 0 2px}
+
+button.done{background:none;border:0;padding:6px 0;cursor:pointer;text-align:start}
+button.done small{font-weight:600;color:var(--mut);margin-inline-start:4px}
+.li .ck{cursor:pointer;position:relative}
+.li .ck::after{content:"";position:absolute;inset:-9px}
+.ib svg{pointer-events:none}
+#top .ib{flex:none}
