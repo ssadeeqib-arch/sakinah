@@ -7,3 +7,6 @@ window.SAKINAH_FIREBASE = {
   storageBucket: "sakinah-280cf.firebasestorage.app",
   messagingSenderId: "450835373335"
 };
+
+/* Photo album: private Google Apps Script on Sadiq's account that saves photos to his Google Drive. */
+window.SAKINAH_PHOTOS = "https://script.google.com/macros/s/AKfycbz5Pn8bue7iKIWsJyLwvxMRPTeIQ0UimqcnJvmsiCfMNNPPr6sAud-9TkcdAEsxBfgx/exec";
